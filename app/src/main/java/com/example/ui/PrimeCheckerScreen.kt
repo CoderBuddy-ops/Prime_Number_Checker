@@ -42,6 +42,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import com.example.ui.components.HistoryItemCard
 import com.example.ui.components.MathTopAnimation
 import com.example.ui.components.PrimeAnalysisDialog
@@ -63,10 +66,68 @@ fun PrimeCheckerScreen(
 
     val focusManager = LocalFocusManager.current
     val keyboardController = LocalSoftwareKeyboardController.current
+    val haptic = LocalHapticFeedback.current
+
+    val triggerHaptic = {
+        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+    }
 
     // Navigation and onboarding state
     var showOnboarding by remember { mutableStateOf(true) }
     var activeTab by remember { mutableStateOf("SOLVER") }
+
+    // Dashboard opened state driving staggered entries (App opening entry animation)
+    var isDashboardOpened by remember { mutableStateOf(false) }
+    LaunchedEffect(showOnboarding) {
+        if (!showOnboarding) {
+            isDashboardOpened = true
+        }
+    }
+
+    // Beautiful, staggered spring/fade entry animations
+    val headerAlpha by animateFloatAsState(
+        targetValue = if (isDashboardOpened) 1f else 0f,
+        animationSpec = tween(700, delayMillis = 150),
+        label = "headerAlpha"
+    )
+    val headerOffsetY by animateDpAsState(
+        targetValue = if (isDashboardOpened) 0.dp else (-20).dp,
+        animationSpec = spring(dampingRatio = Spring.DampingRatioLowBouncy, stiffness = Spring.StiffnessMediumLow),
+        label = "headerOffset"
+    )
+
+    val card1Alpha by animateFloatAsState(
+        targetValue = if (isDashboardOpened) 1f else 0f,
+        animationSpec = tween(700, delayMillis = 300),
+        label = "card1Alpha"
+    )
+    val card1OffsetY by animateDpAsState(
+        targetValue = if (isDashboardOpened) 0.dp else 25.dp,
+        animationSpec = spring(dampingRatio = Spring.DampingRatioLowBouncy, stiffness = Spring.StiffnessMediumLow),
+        label = "card1Offset"
+    )
+
+    val card2Alpha by animateFloatAsState(
+        targetValue = if (isDashboardOpened) 1f else 0f,
+        animationSpec = tween(700, delayMillis = 450),
+        label = "card2Alpha"
+    )
+    val card2OffsetY by animateDpAsState(
+        targetValue = if (isDashboardOpened) 0.dp else 35.dp,
+        animationSpec = spring(dampingRatio = Spring.DampingRatioLowBouncy, stiffness = Spring.StiffnessMediumLow),
+        label = "card2Offset"
+    )
+
+    val card3Alpha by animateFloatAsState(
+        targetValue = if (isDashboardOpened) 1f else 0f,
+        animationSpec = tween(700, delayMillis = 600),
+        label = "card3Alpha"
+    )
+    val card3OffsetY by animateDpAsState(
+        targetValue = if (isDashboardOpened) 0.dp else 45.dp,
+        animationSpec = spring(dampingRatio = Spring.DampingRatioLowBouncy, stiffness = Spring.StiffnessMediumLow),
+        label = "card3Offset"
+    )
 
     // Trigger analysis function
     val handleCheck = {
@@ -128,6 +189,8 @@ fun PrimeCheckerScreen(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
+                            .offset(y = headerOffsetY)
+                            .graphicsLayer { alpha = headerAlpha }
                             .padding(start = 24.dp, top = 20.dp, end = 24.dp, bottom = 8.dp),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.SpaceBetween
@@ -205,6 +268,8 @@ fun PrimeCheckerScreen(
                                         Card(
                                             modifier = Modifier
                                                 .fillMaxWidth()
+                                                .offset(y = card1OffsetY)
+                                                .graphicsLayer { alpha = card1Alpha }
                                                 .padding(horizontal = 20.dp, vertical = 6.dp),
                                             shape = RoundedCornerShape(16.dp),
                                             colors = CardDefaults.cardColors(containerColor = CosmicSurface),
@@ -219,7 +284,8 @@ fun PrimeCheckerScreen(
                                                     modifier = Modifier
                                                         .size(36.dp)
                                                         .clip(CircleShape)
-                                                        .background(NeonCyan.copy(alpha = 0.1f)),
+                                                        .background(CosmicSurfaceVariant)
+                                                        .border(1.2.dp, NeonCyan, CircleShape),
                                                     contentAlignment = Alignment.Center
                                                 ) {
                                                     Icon(
@@ -252,6 +318,8 @@ fun PrimeCheckerScreen(
                                         Box(
                                             modifier = Modifier
                                                 .fillMaxWidth()
+                                                .offset(y = card2OffsetY)
+                                                .graphicsLayer { alpha = card2Alpha }
                                                 .padding(horizontal = 20.dp, vertical = 6.dp)
                                         ) {
                                             HeroGraphic(
@@ -268,6 +336,8 @@ fun PrimeCheckerScreen(
                                             speedMultiplier = speedMultiplier,
                                             modifier = Modifier
                                                 .fillMaxWidth()
+                                                .offset(y = card2OffsetY)
+                                                .graphicsLayer { alpha = card2Alpha }
                                                 .height(130.dp)
                                         )
                                     }
@@ -277,6 +347,8 @@ fun PrimeCheckerScreen(
                                         Card(
                                             modifier = Modifier
                                                 .fillMaxWidth()
+                                                .offset(y = card3OffsetY)
+                                                .graphicsLayer { alpha = card3Alpha }
                                                 .padding(horizontal = 20.dp, vertical = 8.dp)
                                                 .testTag("calculator_form_card"),
                                             shape = RoundedCornerShape(20.dp),
@@ -341,14 +413,20 @@ fun PrimeCheckerScreen(
                                                             imeAction = ImeAction.Done
                                                         ),
                                                         keyboardActions = KeyboardActions(
-                                                            onDone = { handleCheck() }
+                                                            onDone = {
+                                                                triggerHaptic()
+                                                                handleCheck()
+                                                            }
                                                         )
                                                     )
 
                                                     // Quick Clear action inside text field
                                                     if (numberInput.isNotEmpty()) {
                                                         IconButton(
-                                                            onClick = { viewModel.onInputChange("") },
+                                                            onClick = {
+                                                                triggerHaptic()
+                                                                viewModel.onInputChange("")
+                                                            },
                                                             modifier = Modifier.padding(end = 12.dp)
                                                         ) {
                                                             Box(
@@ -374,7 +452,10 @@ fun PrimeCheckerScreen(
                                                 // Large check primality CTA button
                                                 val isBtnEnabled = numberInput.isNotEmpty() && checkResult !is PrimeCheckResult.Checking
                                                 Button(
-                                                    onClick = { handleCheck() },
+                                                    onClick = {
+                                                        triggerHaptic()
+                                                        handleCheck()
+                                                    },
                                                     enabled = isBtnEnabled,
                                                     modifier = Modifier
                                                         .fillMaxWidth()
@@ -419,6 +500,8 @@ fun PrimeCheckerScreen(
                                         Column(
                                             modifier = Modifier
                                                 .fillMaxWidth()
+                                                .offset(y = card3OffsetY)
+                                                .graphicsLayer { alpha = card3Alpha }
                                                 .padding(top = 24.dp, bottom = 12.dp),
                                             horizontalAlignment = Alignment.CenterHorizontally
                                         ) {
@@ -464,7 +547,10 @@ fun PrimeCheckerScreen(
 
                                             if (history.isNotEmpty()) {
                                                 TextButton(
-                                                    onClick = { viewModel.clearHistory() },
+                                                    onClick = {
+                                                        triggerHaptic()
+                                                        viewModel.clearHistory()
+                                                    },
                                                     contentPadding = PaddingValues(horizontal = 12.dp),
                                                     modifier = Modifier.testTag("clear_history_button")
                                                 ) {
@@ -524,8 +610,12 @@ fun PrimeCheckerScreen(
                                             Box(modifier = Modifier.padding(vertical = 6.dp)) {
                                                 HistoryItemCard(
                                                     check = item,
-                                                    onDelete = { viewModel.deleteHistoryItem(item.id) },
+                                                    onDelete = {
+                                                        triggerHaptic()
+                                                        viewModel.deleteHistoryItem(item.id)
+                                                    },
                                                     onCardClick = {
+                                                        triggerHaptic()
                                                         viewModel.onInputChange(item.numberString)
                                                         viewModel.runPrimeCheck(item.numberString)
                                                         activeTab = "SOLVER"
@@ -570,7 +660,8 @@ fun PrimeCheckerScreen(
                                                         modifier = Modifier
                                                             .size(28.dp)
                                                             .clip(CircleShape)
-                                                            .background(NeonCyan.copy(alpha = 0.12f)),
+                                                            .background(CosmicSurfaceVariant)
+                                                            .border(1.2.dp, NeonCyan, CircleShape),
                                                         contentAlignment = Alignment.Center
                                                     ) {
                                                         Text("1", color = NeonCyan, fontWeight = FontWeight.Bold, fontSize = 12.sp)
@@ -616,7 +707,8 @@ fun PrimeCheckerScreen(
                                                         modifier = Modifier
                                                             .size(28.dp)
                                                             .clip(CircleShape)
-                                                            .background(NeonGold.copy(alpha = 0.12f)),
+                                                            .background(CosmicSurfaceVariant)
+                                                            .border(1.2.dp, NeonGold, CircleShape),
                                                         contentAlignment = Alignment.Center
                                                     ) {
                                                         Text("2", color = NeonGold, fontWeight = FontWeight.Bold, fontSize = 12.sp)
@@ -655,7 +747,8 @@ fun PrimeCheckerScreen(
                                                         modifier = Modifier
                                                             .size(28.dp)
                                                             .clip(CircleShape)
-                                                            .background(NeonMagenta.copy(alpha = 0.12f)),
+                                                            .background(CosmicSurfaceVariant)
+                                                            .border(1.2.dp, NeonMagenta, CircleShape),
                                                         contentAlignment = Alignment.Center
                                                     ) {
                                                         Text("3", color = NeonMagenta, fontWeight = FontWeight.Bold, fontSize = 12.sp)
@@ -702,7 +795,10 @@ fun PrimeCheckerScreen(
                                 label = "Solver",
                                 icon = Icons.Default.Calculate,
                                 isActive = activeTab == "SOLVER",
-                                onClick = { activeTab = "SOLVER" }
+                                onClick = {
+                                    triggerHaptic()
+                                    activeTab = "SOLVER"
+                                }
                             )
 
                             // History Tab Button
@@ -710,7 +806,10 @@ fun PrimeCheckerScreen(
                                 label = "History",
                                 icon = Icons.Default.History,
                                 isActive = activeTab == "HISTORY",
-                                onClick = { activeTab = "HISTORY" }
+                                onClick = {
+                                    triggerHaptic()
+                                    activeTab = "HISTORY"
+                                }
                             )
 
                             // Theory Tab Button
@@ -718,7 +817,10 @@ fun PrimeCheckerScreen(
                                 label = "Theory",
                                 icon = Icons.Default.Book,
                                 isActive = activeTab == "THEORY",
-                                onClick = { activeTab = "THEORY" }
+                                onClick = {
+                                    triggerHaptic()
+                                    activeTab = "THEORY"
+                                }
                             )
                         }
 
@@ -953,8 +1055,12 @@ fun OnboardingScreen(
         }
 
         // 4. "Start Exploring" CTA Button with Arrow-Right circle (Replicating phone 1 exactly)
+        val haptic = LocalHapticFeedback.current
         Button(
-            onClick = onDismiss,
+            onClick = {
+                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                onDismiss()
+            },
             modifier = Modifier
                 .fillMaxWidth(0.95f)
                 .height(64.dp)
@@ -1019,15 +1125,14 @@ fun HeroGraphic(
         colors = CardDefaults.cardColors(
             containerColor = CosmicSurface
         ),
-        border = BorderStroke(1.dp, CosmicBorder.copy(alpha = 0.6f))
+        border = BorderStroke(1.5.dp, CosmicBorder)
     ) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .background(
-                    Brush.radialGradient(
-                        colors = listOf(color.copy(alpha = 0.15f), Color.Transparent),
-                        radius = 400f
+                    Brush.linearGradient(
+                        colors = listOf(CosmicSurface, CosmicSurfaceVariant)
                     )
                 ),
             contentAlignment = Alignment.Center
@@ -1047,16 +1152,16 @@ fun HeroGraphic(
                     val w = size.width
                     val h = size.height
                     drawLine(
-                        color = color.copy(alpha = 0.25f),
+                        color = color,
                         start = Offset(w - 12.dp.toPx(), 0f),
                         end = Offset(w, 0f),
-                        strokeWidth = 2.5.dp.toPx()
+                        strokeWidth = 2.dp.toPx()
                     )
                     drawLine(
-                        color = color.copy(alpha = 0.25f),
+                        color = color,
                         start = Offset(w, 0f),
                         end = Offset(w, 12.dp.toPx()),
-                        strokeWidth = 2.5.dp.toPx()
+                        strokeWidth = 2.dp.toPx()
                     )
                 }
                 // Bottom-left corner bracket
@@ -1068,16 +1173,16 @@ fun HeroGraphic(
                     val w = size.width
                     val h = size.height
                     drawLine(
-                        color = color.copy(alpha = 0.25f),
+                        color = color,
                         start = Offset(0f, h),
                         end = Offset(12.dp.toPx(), h),
-                        strokeWidth = 2.5.dp.toPx()
+                        strokeWidth = 2.dp.toPx()
                     )
                     drawLine(
-                        color = color.copy(alpha = 0.25f),
+                        color = color,
                         start = Offset(0f, h - 12.dp.toPx()),
                         end = Offset(0f, h),
-                        strokeWidth = 2.5.dp.toPx()
+                        strokeWidth = 2.dp.toPx()
                     )
                 }
             }
@@ -1110,8 +1215,8 @@ fun HeroGraphic(
                 Box(
                     modifier = Modifier
                         .clip(CircleShape)
-                        .background(color.copy(alpha = 0.12f))
-                        .border(1.dp, color.copy(alpha = 0.3f), CircleShape)
+                        .background(CosmicSurfaceVariant)
+                        .border(1.2.dp, color, CircleShape)
                         .padding(horizontal = 16.dp, vertical = 6.dp)
                 ) {
                     Text(
@@ -1148,7 +1253,7 @@ fun BottomNavItem(
             modifier = Modifier
                 .size(28.dp)
                 .clip(RoundedCornerShape(8.dp))
-                .background(if (isActive) activeColor.copy(alpha = 0.12f) else Color.Transparent),
+                .background(if (isActive) CosmicSurfaceVariant else Color.Transparent),
             contentAlignment = Alignment.Center
         ) {
             Icon(

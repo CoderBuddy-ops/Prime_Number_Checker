@@ -47,6 +47,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import com.example.data.model.PrimeCheck
 import com.example.ui.PrimeCheckResult
 import com.example.ui.theme.*
@@ -98,7 +100,7 @@ fun MathTopAnimation(
                 brush = Brush.verticalGradient(
                     colors = listOf(
                         CosmicBackground,
-                        CosmicSurface.copy(alpha = 0.7f)
+                        CosmicSurface
                     )
                 )
             ),
@@ -201,8 +203,8 @@ fun MathTopAnimation(
             modifier = Modifier
                 .size(76.dp)
                 .clip(CircleShape)
-                .background(CosmicSurfaceVariant.copy(alpha = 0.85f))
-                .border(1.5.dp, NeonPurple.copy(alpha = 0.5f), CircleShape),
+                .background(CosmicSurfaceVariant)
+                .border(1.5.dp, NeonPurple, CircleShape),
             contentAlignment = Alignment.Center
         ) {
             Text(
@@ -227,6 +229,10 @@ fun PrimeAnalysisDialog(
 ) {
     val context = LocalContext.current
     val clipboardManager = LocalClipboardManager.current
+    val haptic = LocalHapticFeedback.current
+    val triggerHaptic = {
+        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+    }
 
     val mainAccentColor = when (result.resultType) {
         "PRIME" -> NeonCyan
@@ -258,7 +264,7 @@ fun PrimeAnalysisDialog(
                     containerColor = CosmicSurface,
                     contentColor = OnCosmicSurface
                 ),
-                border = BorderStroke(1.5.dp, mainAccentColor.copy(alpha = 0.4f))
+                border = BorderStroke(1.5.dp, CosmicBorder)
             ) {
                 Column(
                     modifier = Modifier
@@ -272,7 +278,7 @@ fun PrimeAnalysisDialog(
                             .width(42.dp)
                             .height(4.dp)
                             .clip(CircleShape)
-                            .background(OnCosmicSurfaceMuted.copy(alpha = 0.35f))
+                            .background(CosmicBorder)
                     )
 
                     Spacer(modifier = Modifier.height(20.dp))
@@ -281,20 +287,9 @@ fun PrimeAnalysisDialog(
                     Box(
                         modifier = Modifier
                             .size(92.dp)
-                            .drawBehind {
-                                drawCircle(
-                                    brush = Brush.radialGradient(
-                                        colors = listOf(
-                                            mainAccentColor.copy(alpha = 0.3f),
-                                            Color.Transparent
-                                        )
-                                    ),
-                                    radius = 64.dp.toPx()
-                                )
-                            }
                             .clip(CircleShape)
-                            .background(mainAccentColor.copy(alpha = 0.08f))
-                            .border(1.5.dp, mainAccentColor.copy(alpha = 0.4f), CircleShape),
+                            .background(CosmicSurfaceVariant)
+                            .border(1.5.dp, mainAccentColor, CircleShape),
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
@@ -399,7 +394,7 @@ fun PrimeAnalysisDialog(
                                     modifier = Modifier
                                         .clip(RoundedCornerShape(10.dp))
                                         .background(CosmicSurfaceVariant)
-                                        .border(1.dp, NeonCyan.copy(alpha = 0.2f), RoundedCornerShape(10.dp))
+                                        .border(1.dp, CosmicBorder, RoundedCornerShape(10.dp))
                                         .padding(horizontal = 14.dp, vertical = 6.dp)
                                 ) {
                                     Text(
@@ -417,7 +412,7 @@ fun PrimeAnalysisDialog(
                         Card(
                             modifier = Modifier.fillMaxWidth(),
                             colors = CardDefaults.cardColors(containerColor = CosmicSurfaceVariant),
-                            border = BorderStroke(1.dp, NeonMagenta.copy(alpha = 0.15f))
+                            border = BorderStroke(1.dp, CosmicBorder)
                         ) {
                             Row(
                                 modifier = Modifier.padding(14.dp),
@@ -449,6 +444,7 @@ fun PrimeAnalysisDialog(
                         // Copy Analysis Report
                         OutlinedButton(
                             onClick = {
+                                triggerHaptic()
                                 val report = generateReportText(result)
                                 clipboardManager.setText(AnnotatedString(report))
                                 Toast.makeText(context, "Report copied!", Toast.LENGTH_SHORT).show()
@@ -472,6 +468,7 @@ fun PrimeAnalysisDialog(
                         // Share analysis report
                         OutlinedButton(
                             onClick = {
+                                triggerHaptic()
                                 shareReport(context, result)
                             },
                             modifier = Modifier.weight(1f),
@@ -495,7 +492,10 @@ fun PrimeAnalysisDialog(
 
                     // Large prominent dismiss results button (matching original design HTML exactly)
                     Button(
-                        onClick = onDismiss,
+                        onClick = {
+                            triggerHaptic()
+                            onDismiss()
+                        },
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(48.dp),
@@ -562,6 +562,7 @@ fun HistoryItemCard(
     onDelete: () -> Unit,
     onCardClick: () -> Unit
 ) {
+    val haptic = LocalHapticFeedback.current
     val mainColor = when (check.resultType) {
         "PRIME" -> NeonCyan
         "COMPOSITE" -> NeonMagenta
@@ -574,7 +575,10 @@ fun HistoryItemCard(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { onCardClick() }
+            .clickable {
+                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                onCardClick()
+            }
             .testTag("history_item_${check.id}"),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
@@ -638,7 +642,10 @@ fun HistoryItemCard(
 
             // Right side Action: Delete
             IconButton(
-                onClick = onDelete,
+                onClick = {
+                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                    onDelete()
+                },
                 modifier = Modifier.testTag("delete_button_${check.id}")
             ) {
                 Icon(
