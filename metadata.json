@@ -1,0 +1,6 @@
+{
+  "name": "Prime Checker",
+  "description": "A beautifully designed and interactive Prime Number Checker with modern animations, history tracking, and number analysis.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
